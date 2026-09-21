@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Cyber Heist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- animated background layers (CSS-driven) -->
+  <div class="bg-layer" aria-hidden="true">
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       GAME WRAPPER — canvas + all overlay screens
+  ═══════════════════════════════════════════════ -->
+  <div id="game-wrapper">
+
+    <!-- Canvas: 960×640 logical, scaled by CSS -->
+    <canvas id="gameCanvas" width="960" height="640"></canvas>
+
+    <!-- ── HUD (shown during PLAYING / PAUSED) ── -->
+    <div id="hud" class="hud hidden" role="status" aria-live="polite">
+      <div class="hud-pill hud-level">
+        <span class="hud-label">LEVEL</span>
+        <span id="hud-level-name" class="hud-value">ENTRY POINT</span>
+      </div>
+
+      <div class="hud-pill hud-alert-pill">
+        <span class="hud-label">ALERT</span>
+        <div id="alert-bar-bg" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="alert-bar-fill"></div>
+        </div>
+        <span id="alert-pct" class="hud-value">0%</span>
+        <span id="alert-label" class="hud-alert-state">CLEAR</span>
+      </div>
+
+      <div class="hud-pill hud-data-pill">
+        <span class="hud-label">DATA</span>
+        <span id="hud-data" class="hud-value">0 / 0</span>
+      </div>
+
+      <div class="hud-pill hud-time-pill">
+        <span class="hud-label">TIME</span>
+        <span id="hud-timer" class="hud-value hud-timer">00:00</span>
+      </div>
+    </div>
+
+    <!-- ── MAIN MENU ── -->
+    <div id="screen-menu" class="screen visible" role="main">
+      <div class="screen-inner menu-inner">
+
+        <header class="game-title">
+          <span class="title-eyebrow">MINI</span>
+          <h1 class="title-main">CYBER HEIST</h1>
+          <p class="title-tagline">Infiltrate the network. Steal the data. Escape undetected.</p>
+        </header>
+
+        <nav class="menu-nav" aria-label="Main menu">
+          <button id="btn-play" class="btn btn-primary">Start Heist</button>
+          <button id="btn-howtoplay" class="btn btn-secondary">How to Play</button>
+          <button id="btn-highscores" class="btn btn-secondary">High Scores</button>
+        </nav>
+
+        <button id="btn-mute-menu" class="btn-sound" title="Toggle audio" aria-label="Toggle sound">
+          <span class="sound-icon">🔊</span>
+          <span class="sound-label">Sound On</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ── LEVEL SELECT ── -->
+    <div id="screen-levelselect" class="screen hidden" role="dialog" aria-labelledby="levelselect-title">
+      <div class="screen-inner">
+        <h2 id="levelselect-title" class="screen-title">Select Mission</h2>
+        <div id="level-list" role="list"></div>
+        <button id="btn-levelselect-back" class="btn btn-ghost">Back</button>
+      </div>
+    </div>
+
+    <!-- ── INSTRUCTIONS ── -->
+    <div id="screen-instructions" class="screen hidden" role="dialog" aria-labelledby="instructions-title">
+      <div class="screen-inner instructions-inner">
+
+        <h2 id="instructions-title" class="screen-title">How to Play</h2>
+
+        <div class="instr-grid">
+
+          <div class="instr-card">
+            <h3 class="instr-heading">Movement</h3>
+            <p class="instr-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span class="instr-or">or</span> Arrow Keys</p>
+            <p class="instr-body">Move your operative through the facility.</p>
+          </div>
+
+          <div class="instr-card">
+            <h3 class="instr-heading">Hacking</h3>
+            <p class="instr-keys">Hold <kbd>E</kbd> near a camera or terminal</p>
+            <p class="instr-body">Hold for 1.5 seconds to hack. Release early to cancel.</p>
+          </div>
+
+          <div class="instr-card">
+            <h3 class="instr-heading">Objective</h3>
+            <p class="instr-body">Collect all required <span class="accent-cyan">data nodes</span>, then reach the <span class="accent-green">extraction zone</span>.</p>
+          </div>
+
+          <div class="instr-card">
+            <h3 class="instr-heading">Alert System</h3>
+            <ul class="instr-alert-list">
+              <li><span class="dot dot-clear"></span><strong>Clear</strong> — 0–39%</li>
+              <li><span class="dot dot-caution"></span><strong>Caution</strong> — 40–59%</li>
+              <li><span class="dot dot-alert"></span><strong>Alert</strong> — 60–99%, guards pursue</li>
+              <li><span class="dot dot-lockdown"></span><strong>Lockdown</strong> — 100%, heist fails</li>
+            </ul>
+          </div>
+
+          <div class="instr-card">
+            <h3 class="instr-heading">Security</h3>
+            <p class="instr-body">Avoid camera vision cones. Guards cannot be hacked — avoid them entirely. Locked doors require terminal hacks.</p>
+          </div>
+
+          <div class="instr-card">
+            <h3 class="instr-heading">Controls</h3>
+            <p class="instr-keys"><kbd>Esc</kbd> <span class="instr-or">or</span> <kbd>P</kbd> — Pause</p>
+            <p class="instr-body">Faster completion and lower peak alert earn a higher rank.</p>
+          </div>
+
+        </div>
+
+        <button id="btn-instructions-close" class="btn btn-primary">Back</button>
+
+      </div>
+    </div>
+
+    <!-- ── HIGH SCORES ── -->
+    <div id="screen-highscores" class="screen hidden" role="dialog" aria-labelledby="highscores-title">
+      <div class="screen-inner">
+        <h2 id="highscores-title" class="screen-title">High Scores</h2>
+        <div id="highscores-list"></div>
+        <button id="btn-highscores-close" class="btn btn-ghost">Back</button>
+      </div>
+    </div>
+
+    <!-- ── PAUSE ── -->
+    <div id="screen-pause" class="screen hidden" role="dialog" aria-labelledby="pause-title">
+      <div class="screen-inner pause-inner">
+        <h2 id="pause-title" class="screen-title pause-title">Paused</h2>
+        <nav class="menu-nav" aria-label="Pause menu">
+          <button id="btn-resume" class="btn btn-primary">Resume</button>
+          <button id="btn-pause-restart" class="btn btn-secondary">Restart Mission</button>
+          <button id="btn-pause-menu" class="btn btn-ghost">Main Menu</button>
+        </nav>
+        <button id="btn-mute-pause" class="btn-sound btn-sound--sm" title="Toggle audio" aria-label="Toggle sound">
+          <span class="sound-icon">🔊</span>
+          <span class="sound-label">Sound On</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── GAME OVER ── -->
+    <div id="screen-gameover" class="screen hidden" role="dialog" aria-labelledby="gameover-title">
+      <div class="screen-inner result-inner">
+
+        <div class="result-header result-header--fail">
+          <h2 id="gameover-title" class="result-title">Heist Failed</h2>
+          <p id="go-reason" class="result-subtitle"></p>
+        </div>
+
+        <p id="go-level-name" class="result-level-name"></p>
+
+        <div class="result-stats-grid">
+          <div class="result-stat">
+            <span class="result-stat-label">Time</span>
+            <span class="result-stat-value" id="go-time">00:00</span>
+          </div>
+          <div class="result-stat">
+            <span class="result-stat-label">Alert</span>
+            <span class="result-stat-value result-stat-danger" id="go-alert">0%</span>
+          </div>
+        </div>
+
+        <nav class="menu-nav">
+          <button id="btn-go-retry" class="btn btn-primary">Retry</button>
+          <button id="btn-go-menu" class="btn btn-ghost">Main Menu</button>
+        </nav>
+
+      </div>
+    </div>
+
+    <!-- ── VICTORY ── -->
+    <div id="screen-victory" class="screen hidden" role="dialog" aria-labelledby="victory-title">
+      <div class="screen-inner result-inner">
+
+        <div class="result-header result-header--win">
+          <h2 id="victory-title" class="result-title">Heist Complete</h2>
+          <p class="result-subtitle">Data secured.</p>
+        </div>
+
+        <p id="vic-level-name" class="result-level-name"></p>
+        <div id="vic-newbest" class="new-best hidden" aria-live="polite">New Best Score</div>
+
+        <div class="result-stats-grid result-stats-grid--wide">
+          <div class="result-stat">
+            <span class="result-stat-label">Score</span>
+            <span class="result-stat-value result-stat-accent" id="vic-score">0</span>
+          </div>
+          <div class="result-stat">
+            <span class="result-stat-label">Rank</span>
+            <span class="result-stat-value result-stat-rank" id="vic-rank">D</span>
+          </div>
+          <div class="result-stat">
+            <span class="result-stat-label">Time</span>
+            <span class="result-stat-value" id="vic-time">00:00</span>
+          </div>
+        </div>
+
+        <nav class="menu-nav">
+          <button id="btn-vic-next" class="btn btn-primary hidden">Next Mission</button>
+          <button id="btn-vic-retry" class="btn btn-secondary">Play Again</button>
+          <button id="btn-vic-menu" class="btn btn-ghost">Main Menu</button>
+        </nav>
+
+      </div>
+    </div>
+
+  </div><!-- /#game-wrapper -->
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
